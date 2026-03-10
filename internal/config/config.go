@@ -9,6 +9,7 @@ import (
 // Config holds all configuration values for the application.
 type Config struct {
 	// Server settings
+	ServerHost string
 	ServerPort string
 
 	// API endpoints
@@ -39,6 +40,7 @@ type Config struct {
 // Load reads configuration from environment variables and returns a Config.
 func Load() (*Config, error) {
 	cfg := &Config{
+		ServerHost:        getEnvOrDefault("SERVER_HOST", "0.0.0.0"),
 		ServerPort:        getEnvOrDefault("SERVER_PORT", "8080"),
 		BaseAPIURL:        os.Getenv("BASE_API_URL"),
 		BaseCIAMURL:       os.Getenv("BASE_CIAM_URL"),

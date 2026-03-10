@@ -67,6 +67,7 @@ Copy `.env.template` to `.env` and set the required values:
 
 | Variable | Description | Required |
 |---|---|---|
+| `SERVER_HOST` | HTTP server bind address (default: 0.0.0.0) | No |
 | `SERVER_PORT` | HTTP server port (default: 8080) | No |
 | `DATABASE_PATH` | SQLite database path (default: me_cli.db) | No |
 | `BASE_API_URL` | Base API URL | Yes |

@@ -143,9 +143,9 @@ func main() {
 	h = middleware.CORS(h)
 	h = middleware.Logger(h)
 
-	addr := ":" + cfg.ServerPort
+	addr := cfg.ServerHost + ":" + cfg.ServerPort
 	log.Printf("Starting ME CLI Sunset API server on %s", addr)
-	log.Printf("API documentation: http://localhost%s/api/v1/health", addr)
+	log.Printf("API documentation: http://%s/api/v1/health", addr)
 
 	if err := http.ListenAndServe(addr, h); err != nil {
 		log.Fatalf("Server failed: %v", err)
@@ -204,6 +204,7 @@ func init() {
 		fmt.Println("Usage: me-cli-sunset")
 		fmt.Println("")
 		fmt.Println("Environment variables:")
+		fmt.Println("  SERVER_HOST        - HTTP server bind address (default: 0.0.0.0)")
 		fmt.Println("  SERVER_PORT        - HTTP server port (default: 8080)")
 		fmt.Println("  DATABASE_PATH      - SQLite database path (default: me_cli.db)")
 		fmt.Println("  BASE_API_URL       - Base API URL (required)")

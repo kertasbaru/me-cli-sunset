@@ -24,7 +24,7 @@ info:
     name: MIT
 
 servers:
-  - url: http://localhost:8080
+  - url: http://0.0.0.0:8080
     description: Local development server
 
 tags:
