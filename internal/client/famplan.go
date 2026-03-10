@@ -30,12 +30,12 @@ func (c *Client) ValidateFamplanMSISDN(idToken, msisdn string) (map[string]inter
 // ChangeFamplanMember changes a family plan member in a specific slot.
 func (c *Client) ChangeFamplanMember(idToken, parentAlias, alias string, slotID int, familyMemberID, newMSISDN string) (map[string]interface{}, error) {
 	payload := map[string]interface{}{
-		"parent_alias":    parentAlias,
-		"is_enterprise":   false,
-		"slot_id":         slotID,
-		"alias":           alias,
-		"lang":            "en",
-		"msisdn":          newMSISDN,
+		"parent_alias":     parentAlias,
+		"is_enterprise":    false,
+		"slot_id":          slotID,
+		"alias":            alias,
+		"lang":             "en",
+		"msisdn":           newMSISDN,
 		"family_member_id": familyMemberID,
 	}
 
@@ -59,7 +59,7 @@ func (c *Client) SetFamplanQuotaLimit(idToken string, originalAllocation, newAll
 		"is_enterprise": false,
 		"member_allocations": []map[string]interface{}{
 			{
-				"new_text_allocation":      0,
+				"new_text_allocation":       0,
 				"original_text_allocation":  0,
 				"original_voice_allocation": 0,
 				"original_allocation":       originalAllocation,

@@ -8,10 +8,10 @@ import (
 
 func newTestCryptoService() *CryptoService {
 	return NewCryptoService(
-		"1234567890123456",       // xdataKey (16 bytes)
-		"test_ax_api_sig_key",    // axAPISigKey
-		"test_base_secret",       // xAPIBaseSecret
-		"1234567890123456",       // encryptedFieldKey (16 bytes)
+		"1234567890123456",                 // xdataKey (16 bytes)
+		"test_ax_api_sig_key",              // axAPISigKey
+		"test_base_secret",                 // xAPIBaseSecret
+		"1234567890123456",                 // encryptedFieldKey (16 bytes)
 		"12345678901234567890123456789012", // axFPKey (32 bytes)
 	)
 }

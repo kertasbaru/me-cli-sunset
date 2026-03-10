@@ -3,8 +3,8 @@ package client
 // GetProfile fetches the user profile.
 func (c *Client) GetProfile(accessToken, idToken string) (map[string]interface{}, error) {
 	payload := map[string]interface{}{
-		"access_token": accessToken,
-		"app_version":  "8.9.0",
+		"access_token":  accessToken,
+		"app_version":   "8.9.0",
 		"is_enterprise": false,
 		"lang":          "en",
 	}
@@ -62,9 +62,9 @@ func (c *Client) GetFamily(idToken, familyCode string, isEnterprise *bool, migra
 				"is_transaction_routine": false,
 				"migration_type":         mt,
 				"package_family_code":    familyCode,
-				"is_autobuy":            false,
+				"is_autobuy":             false,
 				"is_enterprise":          ie,
-				"is_pdlp":               true,
+				"is_pdlp":                true,
 				"referral_code":          "",
 				"is_migration":           false,
 				"lang":                   "en",
@@ -103,13 +103,13 @@ func (c *Client) GetFamily(idToken, familyCode string, isEnterprise *bool, migra
 // GetFamilies fetches all package families for a category.
 func (c *Client) GetFamilies(idToken, packageCategoryCode string) (map[string]interface{}, error) {
 	payload := map[string]interface{}{
-		"migration_type":       "",
-		"is_enterprise":        false,
-		"is_shareable":         false,
+		"migration_type":        "",
+		"is_enterprise":         false,
+		"is_shareable":          false,
 		"package_category_code": packageCategoryCode,
-		"with_icon_url":        true,
-		"is_migration":         false,
-		"lang":                 "en",
+		"with_icon_url":         true,
+		"is_migration":          false,
+		"lang":                  "en",
 	}
 
 	res, err := c.SendAPIRequest("api/v8/xl-stores/families", payload, idToken, "POST")
@@ -133,13 +133,13 @@ func (c *Client) GetPackage(idToken, packageOptionCode, packageFamilyCode, packa
 		"migration_type":         "NONE",
 		"package_family_code":    packageFamilyCode,
 		"family_role_hub":        "",
-		"is_autobuy":            false,
+		"is_autobuy":             false,
 		"is_enterprise":          false,
 		"is_shareable":           false,
 		"is_migration":           false,
 		"lang":                   "en",
 		"package_option_code":    packageOptionCode,
-		"is_upsell_pdp":         false,
+		"is_upsell_pdp":          false,
 		"package_variant_code":   packageVariantCode,
 	}
 

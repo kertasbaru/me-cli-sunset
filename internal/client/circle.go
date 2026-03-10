@@ -45,9 +45,9 @@ func (c *Client) InviteCircleMember(accessToken, idToken, msisdn, name, groupID,
 	}
 
 	payload := map[string]interface{}{
-		"access_token":    accessToken,
-		"group_id":        groupID,
-		"is_enterprise":   false,
+		"access_token":  accessToken,
+		"group_id":      groupID,
+		"is_enterprise": false,
 		"members": []map[string]interface{}{
 			{
 				"msisdn": encryptedMSISDN,
@@ -96,9 +96,9 @@ func (c *Client) CreateCircle(accessToken, idToken, parentName, groupName, membe
 	}
 
 	payload := map[string]interface{}{
-		"access_token": accessToken,
-		"parent_name":  parentName,
-		"group_name":   groupName,
+		"access_token":  accessToken,
+		"parent_name":   parentName,
+		"group_name":    groupName,
 		"is_enterprise": false,
 		"members": []map[string]interface{}{
 			{
