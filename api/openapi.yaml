@@ -24,8 +24,15 @@ info:
     name: MIT
 
 servers:
-  - url: http://0.0.0.0:8080
-    description: Local development server
+  - url: http://{host}:{port}
+    description: API server
+    variables:
+      host:
+        default: "127.0.0.1"
+        description: Server host address
+      port:
+        default: "8080"
+        description: Server port
 
 tags:
   - name: Health
