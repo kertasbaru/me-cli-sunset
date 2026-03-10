@@ -137,6 +137,15 @@ func main() {
 	mux.HandleFunc("POST /api/v1/bookmarks", bookmarkHandler.AddBookmark)
 	mux.HandleFunc("DELETE /api/v1/bookmarks/{id}", bookmarkHandler.DeleteBookmark)
 
+	// API documentation routes
+	openapiSpec, err := os.ReadFile("api/openapi.yaml")
+	if err != nil {
+		log.Printf("Warning: could not load api/openapi.yaml: %v", err)
+		openapiSpec = []byte("openapi: 3.0.3\ninfo:\n  title: ME CLI Sunset API\n  version: 1.0.0\npaths: {}")
+	}
+	mux.HandleFunc("GET /docs", handler.DocsPage("/api/v1/openapi.yaml"))
+	mux.HandleFunc("GET /api/v1/openapi.yaml", handler.ServeOpenAPISpec(openapiSpec))
+
 	// Apply middleware
 	var h http.Handler = mux
 	h = middleware.Recovery(h)
@@ -145,7 +154,7 @@ func main() {
 
 	addr := cfg.ServerHost + ":" + cfg.ServerPort
 	log.Printf("Starting ME CLI Sunset API server on %s", addr)
-	log.Printf("API documentation: http://%s/api/v1/health", addr)
+	log.Printf("API documentation: http://%s/docs", addr)
 
 	if err := http.ListenAndServe(addr, h); err != nil {
 		log.Fatalf("Server failed: %v", err)
