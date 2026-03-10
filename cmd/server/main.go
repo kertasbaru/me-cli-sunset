@@ -152,6 +152,12 @@ func main() {
 	}
 }
 
+const (
+	// randModelMin and randModelMax define the range for random device model generation.
+	randModelMin = 1000
+	randModelMax = 9000
+)
+
 func initFingerprint(db *database.DB, cs *crypto.CryptoService) (string, string, error) {
 	existing, err := db.GetFingerprint()
 	if err != nil {
@@ -164,8 +170,8 @@ func initFingerprint(db *database.DB, cs *crypto.CryptoService) (string, string,
 
 	// Generate new fingerprint
 	dev := crypto.DeviceInfo{
-		Manufacturer:   fmt.Sprintf("samsung%d", rand.Intn(9000)+1000),
-		Model:          fmt.Sprintf("SM-N93%d", rand.Intn(9000)+1000),
+		Manufacturer:   fmt.Sprintf("samsung%d", rand.Intn(randModelMax)+randModelMin),
+		Model:          fmt.Sprintf("SM-N93%d", rand.Intn(randModelMax)+randModelMin),
 		Lang:           "en",
 		Resolution:     "720x1540",
 		TZShort:        "GMT07:00",

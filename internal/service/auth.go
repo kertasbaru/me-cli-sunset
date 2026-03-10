@@ -12,6 +12,9 @@ import (
 	"github.com/kertasbaru/me-cli-sunset/internal/model"
 )
 
+// tokenRefreshIntervalSec is the interval in seconds before tokens are automatically refreshed.
+const tokenRefreshIntervalSec = 300
+
 // AuthService manages authentication state and token lifecycle.
 type AuthService struct {
 	db              *database.DB
@@ -64,8 +67,8 @@ func (s *AuthService) GetActiveUser() *model.ActiveUser {
 		s.mu.RUnlock()
 	}
 
-	// Refresh tokens if older than 5 minutes
-	if time.Now().Unix()-lastRefresh > 300 {
+	// Refresh tokens if older than the configured interval
+	if time.Now().Unix()-lastRefresh > tokenRefreshIntervalSec {
 		if err := s.renewTokens(); err != nil {
 			log.Printf("Failed to renew tokens: %v", err)
 		}
