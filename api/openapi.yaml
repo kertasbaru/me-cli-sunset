@@ -1,0 +1,1070 @@
+openapi: 3.0.3
+info:
+  title: ME CLI Sunset API
+  description: |
+    REST API for managing XL Axiata mobile accounts, data packages, family plans,
+    and circle groups. Converted from the original Python CLI application to a
+    professional Go API service with SQLite credential storage.
+
+    ## Repository
+    - **Source**: [github.com/kertasbaru/me-cli-sunset](https://github.com/kertasbaru/me-cli-sunset)
+
+    ## Authentication Flow
+    1. Request OTP via `POST /api/v1/auth/otp/request`
+    2. Submit OTP via `POST /api/v1/auth/otp/submit`
+    3. Use the active session for subsequent API calls
+
+    ## Storage
+    All credentials and session data are stored in a local SQLite database.
+  version: 1.0.0
+  contact:
+    name: ME CLI Sunset
+    url: https://github.com/kertasbaru/me-cli-sunset
+  license:
+    name: MIT
+
+servers:
+  - url: http://{host}:{port}
+    description: API server
+    variables:
+      host:
+        default: "127.0.0.1"
+        description: Server host address
+      port:
+        default: "8080"
+        description: Server port
+
+tags:
+  - name: Health
+    description: Server health check
+  - name: Authentication
+    description: Account authentication and session management
+  - name: Packages
+    description: Data package browsing, details, and purchase
+  - name: Circle
+    description: Family circle (hub) group management
+  - name: Family Plan
+    description: Family plan member and quota management
+  - name: Notifications
+    description: Notifications and transaction history
+  - name: Bookmarks
+    description: Package bookmark management
+
+paths:
+  /api/v1/health:
+    get:
+      tags: [Health]
+      summary: Health check
+      description: Returns the server health status and version information.
+      operationId: healthCheck
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  service:
+                    type: string
+                    example: me-cli-sunset-api
+                  version:
+                    type: string
+                    example: 1.0.0
+
+  /api/v1/auth/otp/request:
+    post:
+      tags: [Authentication]
+      summary: Request OTP
+      description: |
+        Sends an OTP code to the specified phone number via SMS.
+        The phone number must start with `628` (Indonesian format).
+      operationId: requestOTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OTPRequest"
+      responses:
+        "200":
+          description: OTP sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+
+  /api/v1/auth/otp/submit:
+    post:
+      tags: [Authentication]
+      summary: Submit OTP
+      description: |
+        Verifies the OTP code and authenticates the user.
+        On success, the account is automatically saved and set as active.
+      operationId: submitOTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OTPSubmitRequest"
+      responses:
+        "200":
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "502":
+          $ref: "#/components/responses/BadGateway"
+
+  /api/v1/auth/accounts:
+    get:
+      tags: [Authentication]
+      summary: List accounts
+      description: Returns all stored accounts from the SQLite database.
+      operationId: listAccounts
+      responses:
+        "200":
+          description: List of accounts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /api/v1/auth/accounts/switch:
+    post:
+      tags: [Authentication]
+      summary: Switch active account
+      description: Sets a different stored account as the active one.
+      operationId: switchAccount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [number]
+              properties:
+                number:
+                  type: integer
+                  format: int64
+                  description: Phone number of the account to activate
+                  example: 6281234567890
+      responses:
+        "200":
+          description: Account switched
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /api/v1/auth/accounts/{number}:
+    delete:
+      tags: [Authentication]
+      summary: Delete account
+      description: Removes a stored account from the database.
+      operationId: deleteAccount
+      parameters:
+        - name: number
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+          description: Phone number of the account to delete
+      responses:
+        "200":
+          description: Account deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /api/v1/auth/active:
+    get:
+      tags: [Authentication]
+      summary: Get active user
+      description: Returns information about the currently active user.
+      operationId: getActiveUser
+      responses:
+        "200":
+          description: Active user info
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "404":
+          description: No active user
+
+  /api/v1/auth/renew:
+    post:
+      tags: [Authentication]
+      summary: Renew token
+      description: Forces a token renewal for the active session.
+      operationId: renewToken
+      responses:
+        "200":
+          description: Token renewed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/packages/balance:
+    get:
+      tags: [Packages]
+      summary: Get balance
+      description: Fetches the current balance and credit information.
+      operationId: getBalance
+      responses:
+        "200":
+          description: Balance data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/packages/family:
+    post:
+      tags: [Packages]
+      summary: Get package family
+      description: Fetches package options for a specific family code.
+      operationId: getFamily
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FamilyRequest"
+      responses:
+        "200":
+          description: Family data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Family not found
+
+  /api/v1/packages/families:
+    get:
+      tags: [Packages]
+      summary: Get package families
+      description: Fetches all package families for a given category.
+      operationId: getFamilies
+      parameters:
+        - name: category_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Package category code
+      responses:
+        "200":
+          description: Families data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/packages/detail:
+    post:
+      tags: [Packages]
+      summary: Get package detail
+      description: Fetches detailed information for a specific package option.
+      operationId: getPackageDetail
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PackageRequest"
+      responses:
+        "200":
+          description: Package detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/packages/addons:
+    get:
+      tags: [Packages]
+      summary: Get package addons
+      description: Fetches addon packages available for a package option.
+      operationId: getAddons
+      parameters:
+        - name: option_code
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Package option code
+      responses:
+        "200":
+          description: Addons data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/packages/tiering:
+    get:
+      tags: [Packages]
+      summary: Get tiering info
+      description: Fetches the loyalty tiering information.
+      operationId: getTieringInfo
+      responses:
+        "200":
+          description: Tiering data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/packages/quotas:
+    get:
+      tags: [Packages]
+      summary: Get quota details
+      description: Fetches current quota details for sentry monitoring.
+      operationId: getQuotaDetails
+      responses:
+        "200":
+          description: Quota data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/packages/payment-methods:
+    post:
+      tags: [Packages]
+      summary: Get payment methods
+      description: Fetches available payment methods for a purchase.
+      operationId: getPaymentMethods
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token_confirmation, payment_target]
+              properties:
+                token_confirmation:
+                  type: string
+                payment_target:
+                  type: string
+      responses:
+        "200":
+          description: Payment methods
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/packages/unsubscribe:
+    post:
+      tags: [Packages]
+      summary: Unsubscribe from package
+      description: Cancels an active package subscription.
+      operationId: unsubscribe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quota_code, product_domain, product_subscription_type]
+              properties:
+                quota_code:
+                  type: string
+                product_domain:
+                  type: string
+                product_subscription_type:
+                  type: string
+      responses:
+        "200":
+          description: Unsubscribe result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/circle/groups:
+    get:
+      tags: [Circle]
+      summary: Get circle groups
+      description: Fetches the status of all circle groups.
+      operationId: getCircleGroups
+      responses:
+        "200":
+          description: Group data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Circle]
+      summary: Create circle
+      description: Creates a new family circle group with an initial member.
+      operationId: createCircle
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CircleCreateRequest"
+      responses:
+        "200":
+          description: Circle created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/circle/groups/{group_id}/members:
+    get:
+      tags: [Circle]
+      summary: Get circle members
+      description: Fetches members of a specific circle group.
+      operationId: getCircleMembers
+      parameters:
+        - name: group_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Members data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/circle/members/validate:
+    post:
+      tags: [Circle]
+      summary: Validate circle member
+      description: Validates a phone number for circle membership eligibility.
+      operationId: validateCircleMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [msisdn]
+              properties:
+                msisdn:
+                  type: string
+                  example: "6281234567890"
+      responses:
+        "200":
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/circle/members/invite:
+    post:
+      tags: [Circle]
+      summary: Invite circle member
+      description: Invites a new member to a circle group.
+      operationId: inviteCircleMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CircleMemberRequest"
+      responses:
+        "200":
+          description: Invitation sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/circle/members/remove:
+    post:
+      tags: [Circle]
+      summary: Remove circle member
+      description: Removes a member from a circle group.
+      operationId: removeCircleMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [member_id, group_id, member_id_parent]
+              properties:
+                member_id:
+                  type: string
+                group_id:
+                  type: string
+                member_id_parent:
+                  type: string
+                is_last_member:
+                  type: boolean
+                  default: false
+      responses:
+        "200":
+          description: Member removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/circle/invitations/accept:
+    post:
+      tags: [Circle]
+      summary: Accept circle invitation
+      description: Accepts a pending circle group invitation.
+      operationId: acceptCircleInvitation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [group_id, member_id]
+              properties:
+                group_id:
+                  type: string
+                member_id:
+                  type: string
+      responses:
+        "200":
+          description: Invitation accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/circle/spending-tracker:
+    post:
+      tags: [Circle]
+      summary: Get spending tracker
+      description: Fetches spending tracker data for a family hub.
+      operationId: getSpendingTracker
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [parent_subs_id, family_id]
+              properties:
+                parent_subs_id:
+                  type: string
+                family_id:
+                  type: string
+      responses:
+        "200":
+          description: Spending data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/circle/bonus:
+    post:
+      tags: [Circle]
+      summary: Get circle bonus
+      description: Fetches bonus data for a family hub.
+      operationId: getCircleBonus
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [parent_subs_id, family_id]
+              properties:
+                parent_subs_id:
+                  type: string
+                family_id:
+                  type: string
+      responses:
+        "200":
+          description: Bonus data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/family/plan:
+    get:
+      tags: [Family Plan]
+      summary: Get family plan data
+      description: Fetches family plan member information.
+      operationId: getFamilyPlanData
+      responses:
+        "200":
+          description: Family plan data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/family/validate:
+    post:
+      tags: [Family Plan]
+      summary: Validate MSISDN
+      description: Validates a phone number for family plan eligibility.
+      operationId: validateFamilyMSISDN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [msisdn]
+              properties:
+                msisdn:
+                  type: string
+                  example: "6281234567890"
+      responses:
+        "200":
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/family/members/change:
+    post:
+      tags: [Family Plan]
+      summary: Change family member
+      description: Changes a family plan member in a specific slot.
+      operationId: changeFamilyMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [parent_alias, alias, slot_id, family_member_id, new_msisdn]
+              properties:
+                parent_alias:
+                  type: string
+                alias:
+                  type: string
+                slot_id:
+                  type: integer
+                family_member_id:
+                  type: string
+                new_msisdn:
+                  type: string
+      responses:
+        "200":
+          description: Member changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/family/members/remove:
+    post:
+      tags: [Family Plan]
+      summary: Remove family member
+      description: Removes a member from the family plan.
+      operationId: removeFamilyMember
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [family_member_id]
+              properties:
+                family_member_id:
+                  type: string
+      responses:
+        "200":
+          description: Member removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/family/quota:
+    post:
+      tags: [Family Plan]
+      summary: Set quota limit
+      description: Sets the quota allocation for a family plan member.
+      operationId: setFamilyQuotaLimit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FamplanQuotaRequest"
+      responses:
+        "200":
+          description: Quota updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/notifications:
+    get:
+      tags: [Notifications]
+      summary: Get notifications
+      description: Fetches all notifications for the active user.
+      operationId: getNotifications
+      responses:
+        "200":
+          description: Notifications data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/notifications/{notification_id}:
+    get:
+      tags: [Notifications]
+      summary: Get notification detail
+      description: Fetches detail for a specific notification.
+      operationId: getNotificationDetail
+      parameters:
+        - name: notification_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Notification detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/transactions:
+    get:
+      tags: [Notifications]
+      summary: Get transaction history
+      description: Fetches the transaction history for the active user.
+      operationId: getTransactionHistory
+      responses:
+        "200":
+          description: Transaction history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/dashboard:
+    get:
+      tags: [Notifications]
+      summary: Get dashboard
+      description: Fetches dashboard segment data for the active user.
+      operationId: getDashboard
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/bookmarks:
+    get:
+      tags: [Bookmarks]
+      summary: List bookmarks
+      description: Returns all bookmarks for the active user from the SQLite database.
+      operationId: listBookmarks
+      responses:
+        "200":
+          description: List of bookmarks
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Bookmarks]
+      summary: Add bookmark
+      description: Adds a new package bookmark for the active user.
+      operationId: addBookmark
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookmarkRequest"
+      responses:
+        "200":
+          description: Bookmark added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /api/v1/bookmarks/{id}:
+    delete:
+      tags: [Bookmarks]
+      summary: Delete bookmark
+      description: Removes a bookmark by its ID.
+      operationId: deleteBookmark
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        "200":
+          description: Bookmark deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+components:
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: success
+        data:
+          type: object
+          description: Response data (varies by endpoint)
+
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: string
+          example: error
+        error:
+          type: string
+          description: Error message
+
+    OTPRequest:
+      type: object
+      required: [contact]
+      properties:
+        contact:
+          type: string
+          description: Phone number in Indonesian format (starts with 628)
+          example: "6281234567890"
+
+    OTPSubmitRequest:
+      type: object
+      required: [contact, code]
+      properties:
+        contact_type:
+          type: string
+          description: Contact type (SMS or DEVICEID)
+          default: SMS
+        contact:
+          type: string
+          description: Phone number
+          example: "6281234567890"
+        code:
+          type: string
+          description: 6-digit OTP code
+          example: "123456"
+
+    FamilyRequest:
+      type: object
+      required: [family_code]
+      properties:
+        family_code:
+          type: string
+          description: Package family code
+        is_enterprise:
+          type: boolean
+          description: Filter by enterprise flag
+        migration_type:
+          type: string
+          description: Migration type filter
+          enum: [NONE, PRE_TO_PRIOH, PRIOH_TO_PRIO, PRIO_TO_PRIOH]
+
+    PackageRequest:
+      type: object
+      required: [package_option_code]
+      properties:
+        package_option_code:
+          type: string
+          description: Package option code
+        package_family_code:
+          type: string
+          description: Package family code
+        package_variant_code:
+          type: string
+          description: Package variant code
+
+    CircleCreateRequest:
+      type: object
+      required: [parent_name, group_name, member_msisdn, member_name]
+      properties:
+        parent_name:
+          type: string
+          description: Name of the circle parent/owner
+        group_name:
+          type: string
+          description: Name for the circle group
+        member_msisdn:
+          type: string
+          description: Phone number of the first member
+          example: "6281234567890"
+        member_name:
+          type: string
+          description: Name of the first member
+
+    CircleMemberRequest:
+      type: object
+      required: [msisdn, group_id]
+      properties:
+        msisdn:
+          type: string
+          description: Phone number of the member
+          example: "6281234567890"
+        name:
+          type: string
+          description: Name of the member
+        group_id:
+          type: string
+          description: Circle group ID
+        member_id_parent:
+          type: string
+          description: Parent member ID
+
+    FamplanQuotaRequest:
+      type: object
+      required: [family_member_id, original_allocation, new_allocation]
+      properties:
+        family_member_id:
+          type: string
+          description: Family member identifier
+        original_allocation:
+          type: integer
+          description: Original quota allocation in bytes
+        new_allocation:
+          type: integer
+          description: New quota allocation in bytes
+
+    BookmarkRequest:
+      type: object
+      required: [family_code]
+      properties:
+        family_code:
+          type: string
+          description: Package family code
+        family_name:
+          type: string
+          description: Package family name
+        is_enterprise:
+          type: boolean
+          default: false
+        variant_name:
+          type: string
+          description: Package variant name
+        option_name:
+          type: string
+          description: Package option name
+        order:
+          type: integer
+          default: 0
+          description: Display order
+
+  responses:
+    BadRequest:
+      description: Invalid request parameters
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Unauthorized:
+      description: No active session
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    BadGateway:
+      description: Upstream API error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
