@@ -12,6 +12,7 @@ env/
 
 # Go
 me-cli-sunset
+server
 *.exe
 vendor/
 

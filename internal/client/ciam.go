@@ -208,7 +208,10 @@ func (c *Client) ExtendSession(subscriberID string) (string, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		body, _ := io.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return "", fmt.Errorf("extend session failed with status %d (failed to read body: %w)", resp.StatusCode, err)
+		}
 		return "", fmt.Errorf("extend session failed: %d - %s", resp.StatusCode, string(body))
 	}
 

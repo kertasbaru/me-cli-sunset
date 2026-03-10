@@ -1,5 +1,7 @@
 package client
 
+import "fmt"
+
 // GetProfile fetches the user profile.
 func (c *Client) GetProfile(accessToken, idToken string) (map[string]interface{}, error) {
 	payload := map[string]interface{}{
@@ -16,7 +18,7 @@ func (c *Client) GetProfile(accessToken, idToken string) (map[string]interface{}
 
 	data, ok := res["data"].(map[string]interface{})
 	if !ok {
-		return nil, nil
+		return nil, fmt.Errorf("profile data not found in response")
 	}
 	return data, nil
 }

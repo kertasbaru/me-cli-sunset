@@ -97,6 +97,10 @@ func (s *AuthService) AddAccount(number int64, refreshToken string) error {
 	idToken, _ := tokens["id_token"].(string)
 	newRefreshToken, _ := tokens["refresh_token"].(string)
 
+	if accessToken == "" || idToken == "" || newRefreshToken == "" {
+		return fmt.Errorf("incomplete tokens received from server")
+	}
+
 	profileData, err := s.client.GetProfile(accessToken, idToken)
 	if err != nil {
 		return fmt.Errorf("failed to get profile: %w", err)
@@ -166,6 +170,10 @@ func (s *AuthService) loadActiveUser(account *model.Account) error {
 	idToken, _ := tokens["id_token"].(string)
 	newRefreshToken, _ := tokens["refresh_token"].(string)
 
+	if accessToken == "" || idToken == "" || newRefreshToken == "" {
+		return fmt.Errorf("incomplete tokens received from server")
+	}
+
 	profileData, err := s.client.GetProfile(accessToken, idToken)
 	if err != nil {
 		return fmt.Errorf("failed to get profile: %w", err)
@@ -217,6 +225,10 @@ func (s *AuthService) renewTokens() error {
 	accessToken, _ := tokens["access_token"].(string)
 	idToken, _ := tokens["id_token"].(string)
 	newRefreshToken, _ := tokens["refresh_token"].(string)
+
+	if accessToken == "" || idToken == "" || newRefreshToken == "" {
+		return fmt.Errorf("incomplete tokens received from server")
+	}
 
 	if err := s.db.UpsertAccount(user.Number, user.SubscriberID, user.SubscriptionType, newRefreshToken); err != nil {
 		log.Printf("Failed to update refresh token: %v", err)
